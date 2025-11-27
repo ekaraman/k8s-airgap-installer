@@ -83,7 +83,7 @@ The offline container registry on the bastion.
 
 The Kubernetes API through the HAProxy load balancer.
 
-2. Key Features
+## 2. Key Features
 Air-gapped friendly design
 No Internet required on masters/workers.
 
@@ -108,7 +108,7 @@ Supports host-based routing (e.g. hello.local).
 Sample application deployment
 Simple nginx-based app deployed via Helm to validate the infrastructure.
 
-3. Repository Structure
+## 3. Repository Structure
 Adjust the structure below to match your actual folder layout.
 
 text
@@ -139,8 +139,9 @@ Copy code
 ├── docs/
 │   └── architecture.md         # (Optional) Extended architecture notes
 └── README.md
-4. Air-Gap Strategy
-4.1. Package and image mirroring
+
+## 4. Air-Gap Strategy
+## 4.1. Package and image mirroring
 From an online environment (or temporarily online bastion):
 
 Mirror OS packages (RHEL / Rocky / Alma, etc.) into a local YUM repo structure.
@@ -177,10 +178,11 @@ Applies necessary SELinux settings, such as:
 bash
 Copy code
 setsebool -P haproxy_connect_any 1
-5. Ansible Workflow
+
+## 5. Ansible Workflow
 A typical end-to-end run looks like this:
 
-5.1. Prepare inventory and variables
+## 5.1. Prepare inventory and variables
 Edit ansible/inventories/hosts.yaml:
 
 Define groups: bastion, control, worker, k8s_lb, app_lb (if any).
@@ -197,7 +199,7 @@ Offline registry address.
 
 YUM repo base URLs.
 
-5.2. Bootstrap bastion
+## 5.2. Bootstrap bastion
 bash
 Copy code
 cd ansible
@@ -212,7 +214,8 @@ Point YUM to the offline repos.
 bash
 Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "node_prereqs,containerd_install"
-5.4. Initialize the first control-plane node
+
+## 5.4. Initialize the first control-plane node
 Use kubeadm_init role to:
 
 Generate kubeadm-config.yaml with controlPlaneEndpoint set to the API HAProxy.
@@ -226,7 +229,8 @@ Save the join commands for other nodes into Ansible facts.
 bash
 Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_init"
-5.5. Join additional control-plane and worker nodes
+
+## 5.5. Join additional control-plane and worker nodes
 kubeadm_join_controlplane uses the stored join command to add more masters.
 
 kubeadm_join_worker adds worker nodes.
@@ -234,13 +238,17 @@ kubeadm_join_worker adds worker nodes.
 bash
 Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_join_controlplane,kubeadm_join_worker"
-5.6. Install Calico CNI
+
+## 5.6. Install Calico CNI
+
 The calico_install role applies a pre-downloaded and modified calico.yaml (all image references point to the offline registry).
 
 bash
 Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "calico_install"
-5.7. Install Helm and deploy ingress-nginx
+
+## 5.7. Install Helm and deploy ingress-nginx
+
 helm_install installs the Helm CLI on the bastion.
 
 ingress_deploy:
@@ -254,7 +262,9 @@ Creates a NodePort or LoadBalancer service for ingress.
 bash
 Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "helm_install,ingress_deploy"
-5.8. Deploy a sample application
+
+## 5.8. Deploy a sample application
+
 Example: a simple nginx Helm chart with host hello.local.
 
 Used to validate:
@@ -265,7 +275,8 @@ Ingress routing via ingress-nginx.
 
 External access via the application load balancer (if configured).
 
-6. Example: Validating the Cluster
+## 6. Example: Validating the Cluster
+
 After the playbooks complete:
 
 Check nodes
@@ -288,7 +299,8 @@ Copy code
 curl -v -H "Host: hello.local" http://<APP_LB_OR_NODE_IP>:<PORT>/
 You should see the default nginx welcome page or your custom application response.
 
-7. Technologies Used
+## 7. Technologies Used
+
 Operating System: RHEL-based (RHEL / Rocky / Alma)
 
 Container Runtime: containerd or Docker (configurable via Ansible)
@@ -305,18 +317,10 @@ Packaging: Helm for application deployment
 
 Load Balancing: HAProxy for API and optional application traffic
 
-8. Notes & Limitations
+## 8. Notes & Limitations
+
 This is a personal reference implementation, not a complete product.
 
 Security hardening (RBAC, PodSecurity, TLS management, etc.) is only partially shown and should be adapted to organizational standards.
 
 Some values (IPs, hostnames, DNS names) are anonymized / generic for public sharing.
-
-9. License
-You can choose any license you prefer, for example:
-
-text
-Copy code
-MIT License
-
-Copyright (c) <YEAR> <YOUR NAME>
