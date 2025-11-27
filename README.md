@@ -12,8 +12,6 @@ The goal of this project is to demonstrate:
 - Automated installation of **Calico CNI**, **ingress-nginx**, and a sample application via **Helm**.
 - Infrastructure and configuration expressed as **idempotent Ansible roles** and **Helm charts/values**.
 
-> **Note:** This repository is meant as a reference implementation for job applications and technical discussions. IP addresses, hostnames, and some configuration values are sanitized or simplified.
-
 ---
 
 ## 1. High-Level Architecture
