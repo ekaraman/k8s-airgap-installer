@@ -1,0 +1,7 @@
+---
+# handlers file for bastion_k8s_repo
+- name: Restart nginx
+  service:
+    name: nginx
+    state: restarted
+

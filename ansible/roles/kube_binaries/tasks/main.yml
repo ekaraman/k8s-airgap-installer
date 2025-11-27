@@ -1,0 +1,16 @@
+---
+# tasks file for kube_binaries
+
+- name: Install kubelet/kubeadm/kubectl (from S3+bastion repos)
+  dnf:
+    name:
+      - kubelet-{{ kubernetes_version }}
+      - kubeadm-{{ kubernetes_version }}
+      - kubectl-{{ kubernetes_version }}
+    state: present
+
+- name: Enable kubelet
+  systemd:
+    name: kubelet
+    enabled: true
+

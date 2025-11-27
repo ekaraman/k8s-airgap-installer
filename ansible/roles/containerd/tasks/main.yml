@@ -1,0 +1,28 @@
+---
+# tasks file for containerd
+
+- name: Install containerd package
+  package:
+    name: "{{ containerd_package_name }}"
+    state: present
+
+- name: Ensure /etc/containerd directory exists
+  file:
+    path: "{{ containerd_config_path | dirname }}"
+    state: directory
+    mode: "0755"
+
+- name: Deploy containerd config.toml
+  template:
+    src: config.toml.j2
+    dest: "{{ containerd_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart containerd
+
+- name: Enable and start containerd
+  systemd:
+    name: containerd
+    enabled: true
+    state: started

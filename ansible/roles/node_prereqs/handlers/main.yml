@@ -1,0 +1,5 @@
+---
+# handlers file for node_prereqs
+
+- name: Apply sysctl
+  command: sysctl --system

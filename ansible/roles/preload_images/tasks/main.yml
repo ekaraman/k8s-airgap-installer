@@ -1,0 +1,19 @@
+---
+# tasks file for preload_images
+
+#- name: Fetch image bundle from bastion (once)
+#  fetch:
+#    src: "{{ hostvars[groups['gsu'][0]].artifact_dir }}/images/k8s-images.tgz"
+#    dest: "/tmp/k8s-images.tgz"
+#    flat: yes
+#  delegate_to: "{{ groups['gsu'][0] }}"
+#  run_once: true
+
+#- name: Distribute to nodes
+#  copy:
+#    src: "/tmp/k8s-images.tgz"
+#    dest: "/opt/k8s-images.tgz"
+
+- name: Load into Docker
+  shell: "gunzip -c /tmp/k8s-images.tgz | docker load"
+

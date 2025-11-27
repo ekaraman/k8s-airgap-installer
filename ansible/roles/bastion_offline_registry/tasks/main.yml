@@ -1,0 +1,88 @@
+---
+# tasks file for bastion_offline_registry
+- name: Install docker engine
+  dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+
+- name: Ensure /etc/docker exists
+  file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+- name: Configure Docker daemon on bastion
+  copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "insecure-registries": ["{{ hostvars[inventory_hostname].ansible_host }}:{{ registry_port }}"],
+        "exec-opts": ["native.cgroupdriver=systemd"],
+        "storage-driver": "overlay2",
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "100m" }
+      }
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Restart docker
+  service:
+    name: docker
+    state: restarted
+    enabled: true
+
+- name: Create registry data dir
+  file:
+    path: "{{ registry_data_dir }}"
+    state: directory
+    mode: '0755'
+
+# Burada amaç:
+# - Container zaten varsa ve Running ise: hiçbir şey yapma, hata yok.
+# - Container varsa ama durmuşsa: rm -f + yeniden run.
+# - Container yoksa: direkt run.
+
+- name: Ensure local-registry container is running
+  shell: |
+    #!/bin/bash
+    set -e
+    {% raw %}
+    # local-registry container çalışıyor mu?
+    if docker ps --format '{{.Names}}' | grep -qx local-registry; then
+      echo "local-registry already running"
+      exit 0
+    fi
+
+    # local-registry var ama çalışmıyorsa sil
+    if docker ps -a --format '{{.Names}}' | grep -qx local-registry; then
+      echo "local-registry exists but not running, removing..."
+      docker rm -f local-registry
+    fi
+
+    # Port 5000 başka biri tarafından kullanılıyor mu?
+    if ss -lnt sport = :5000 2>/dev/null | grep -q ':5000'; then
+      echo "Port 5000 is already in use by another process/container, not starting new registry."
+      # İstersen hata ver:
+      # exit 1
+      # İstersen Ansible bozulmasın diye success dön:
+      exit 0
+    fi
+
+    echo "starting local-registry..."
+    docker run -d \
+      --name local-registry \
+      -p 5000:5000 \
+      --restart always \
+      -v /opt/registry:/var/lib/registry \
+      registry:2
+    {% endraw %}
+  args:
+    executable: /bin/bash
+  register: registry_shell
+  changed_when: "'starting local-registry' in registry_shell.stdout"
+

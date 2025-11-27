@@ -1,0 +1,8 @@
+---
+# handlers file for bastion_offline_registry
+
+- name: Restart docker
+  service:
+    name: docker
+    state: restarted
+

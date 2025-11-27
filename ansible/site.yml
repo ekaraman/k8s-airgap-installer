@@ -1,0 +1,80 @@
+- name: Prepare gsu to install k8s
+  hosts: gsu
+  become: true
+  roles:
+    - bastion_offline_registry
+    - bastion_k8s_repo
+    - bastion_docker_repo
+    - build_image_bundle
+
+- name: Install helm 
+  hosts: gsu
+  become: true
+  roles:
+    - helm_install
+  tags:
+    - helm
+
+- name: Configure LB to use only master-01
+  hosts: loadbalancer
+  become: true
+  vars:
+    apiserver_single_master: true
+  roles:
+    - repos_config
+    - loadbalancer
+
+- name: Prepare all k8s nodes to install k8s
+  hosts: k8s
+  become: true
+  roles:
+    - node_prereqs
+    - repos_config
+    - docker_install
+    - containerd
+    - kube_binaries
+    - preload_images
+    - kubeadm_cleanup
+
+- name: Initialize first control-plane (master-01)
+  hosts: master-01
+  become: true
+  roles:
+    - kubeadm_init
+    - calico_install
+
+- name: Join other control-plane nodes
+  hosts: master-02,master-03
+  become: true
+  roles:
+    - kubeadm_join_controlplane
+
+- name: Configure LB to use all masters
+  hosts: loadbalancer
+  become: true
+  vars:
+    apiserver_single_master: false
+  roles:
+    - loadbalancer
+
+- hosts: worker
+  become: true
+  roles:
+    - kubeadm_join_worker- hosts: worker
+  become: true
+  roles:
+    - kubeadm_join_worker
+
+- name: Deploy ingress
+  hosts: gsu
+  become: true
+  roles:
+    - ingress_deploy
+  tags:
+    - ingress
+
+- name: Install application loadbalancer
+  hosts: app_lb
+  become: true
+  roles:
+    - app_lb
