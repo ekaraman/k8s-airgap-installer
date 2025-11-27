@@ -33,7 +33,7 @@ At a high level, the environment looks like this (example using AWS EC2, but the
   - An external HAProxy or L4/L7 load balancer in front of the ingress-nginx service (NodePort).
   - Used to expose HTTP/HTTPS applications from the cluster.
 
-Conceptual diagram (simplified):
+**Conceptual diagram (simplified):**
 
 ```mermaid
 flowchart LR
@@ -84,41 +84,35 @@ The offline container registry on the bastion.
 The Kubernetes API through the HAProxy load balancer.
 
 2. Key Features
-
 Air-gapped friendly design
-
 No Internet required on masters/workers.
 
 Pre-mirrored RPM repositories and container images.
 
 Ansible-driven automation
-
 Roles for node prerequisites, container runtime, kubeadm, CNI, ingress, Helm, etc.
 
 Idempotent tasks and clear separation of responsibilities per role.
 
 HA Kubernetes control plane
-
 Multiple control-plane nodes behind a single HAProxy endpoint.
 
 Calico CNI
-
 Network plugin installed from offline images.
 
 Ingress-nginx via Helm
-
 Installed using a local Helm chart / tarball and custom values.
 
 Supports host-based routing (e.g. hello.local).
 
 Sample application deployment
-
 Simple nginx-based app deployed via Helm to validate the infrastructure.
 
 3. Repository Structure
-
 Adjust the structure below to match your actual folder layout.
 
+text
+Copy code
 .
 ├── ansible/
 │   ├── inventories/
@@ -145,10 +139,8 @@ Adjust the structure below to match your actual folder layout.
 ├── docs/
 │   └── architecture.md         # (Optional) Extended architecture notes
 └── README.md
-
 4. Air-Gap Strategy
-4.1. Package and Image Mirroring
-
+4.1. Package and image mirroring
 From an online environment (or temporarily online bastion):
 
 Mirror OS packages (RHEL / Rocky / Alma, etc.) into a local YUM repo structure.
@@ -165,8 +157,7 @@ Application images (e.g. nginx for the sample app).
 
 Transfer the RPMs and image tarballs to the bastion (e.g. via scp or aws s3 sync with a VPC endpoint).
 
-4.2. Bastion Host Setup (Ansible)
-
+4.2. Bastion host setup (Ansible)
 The bastion_offline_registry role typically:
 
 Configures and enables a private container registry (e.g. registry.local:5000).
@@ -183,49 +174,45 @@ Application load balancing in front of ingress-nginx.
 
 Applies necessary SELinux settings, such as:
 
+bash
+Copy code
 setsebool -P haproxy_connect_any 1
-
 5. Ansible Workflow
-
 A typical end-to-end run looks like this:
 
-Prepare inventory and variables
-
+5.1. Prepare inventory and variables
 Edit ansible/inventories/hosts.yaml:
 
 Define groups: bastion, control, worker, k8s_lb, app_lb (if any).
 
 Edit ansible/group_vars/all.yaml:
 
-Kubernetes version
+Kubernetes version.
 
-Pod CIDR, Service CIDR
+Pod CIDR, Service CIDR.
 
-controlPlaneEndpoint (HAProxy VIP / DNS)
+controlPlaneEndpoint (HAProxy VIP / DNS).
 
-Offline registry address
+Offline registry address.
 
-YUM repo base URLs
+YUM repo base URLs.
 
-Bootstrap bastion
-
+5.2. Bootstrap bastion
+bash
+Copy code
 cd ansible
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "bastion"
-
-
-Prepare control-plane and worker nodes
-
+5.3. Prepare control-plane and worker nodes
 Install prerequisites: disable swap, configure kernel modules, sysctl, time sync, etc.
 
 Install and configure container runtime (containerd or docker).
 
 Point YUM to the offline repos.
 
+bash
+Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "node_prereqs,containerd_install"
-
-
-Initialize the first control-plane node
-
+5.4. Initialize the first control-plane node
 Use kubeadm_init role to:
 
 Generate kubeadm-config.yaml with controlPlaneEndpoint set to the API HAProxy.
@@ -236,27 +223,24 @@ Configure ~ec2-user/.kube/config (or another user) for kubectl access.
 
 Save the join commands for other nodes into Ansible facts.
 
+bash
+Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_init"
-
-
-Join additional control-plane and worker nodes
-
+5.5. Join additional control-plane and worker nodes
 kubeadm_join_controlplane uses the stored join command to add more masters.
 
 kubeadm_join_worker adds worker nodes.
 
+bash
+Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_join_controlplane,kubeadm_join_worker"
+5.6. Install Calico CNI
+The calico_install role applies a pre-downloaded and modified calico.yaml (all image references point to the offline registry).
 
-
-Install Calico CNI
-
-calico_install applies a pre-downloaded and modified calico.yaml (all image references point to the offline registry).
-
+bash
+Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "calico_install"
-
-
-Install Helm and deploy ingress-nginx
-
+5.7. Install Helm and deploy ingress-nginx
 helm_install installs the Helm CLI on the bastion.
 
 ingress_deploy:
@@ -267,11 +251,10 @@ Applies helm/values/ingress-nginx-values.yaml.
 
 Creates a NodePort or LoadBalancer service for ingress.
 
+bash
+Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "helm_install,ingress_deploy"
-
-
-Deploy a sample application
-
+5.8. Deploy a sample application
 Example: a simple nginx Helm chart with host hello.local.
 
 Used to validate:
@@ -283,33 +266,29 @@ Ingress routing via ingress-nginx.
 External access via the application load balancer (if configured).
 
 6. Example: Validating the Cluster
-
 After the playbooks complete:
 
-Check nodes:
-
+Check nodes
+bash
+Copy code
 kubectl get nodes -o wide
-
-
-Check system pods:
-
+Check system pods
+bash
+Copy code
 kubectl get pods -A
-
-
-Check ingress controller:
-
+Check ingress controller
+bash
+Copy code
 kubectl -n ingress-nginx get svc,deploy,pods
-
-
+Test application access
 From a host that can reach the application load balancer or worker NodePort:
 
+bash
+Copy code
 curl -v -H "Host: hello.local" http://<APP_LB_OR_NODE_IP>:<PORT>/
-
-
 You should see the default nginx welcome page or your custom application response.
 
 7. Technologies Used
-
 Operating System: RHEL-based (RHEL / Rocky / Alma)
 
 Container Runtime: containerd or Docker (configurable via Ansible)
@@ -327,7 +306,6 @@ Packaging: Helm for application deployment
 Load Balancing: HAProxy for API and optional application traffic
 
 8. Notes & Limitations
-
 This is a personal reference implementation, not a complete product.
 
 Security hardening (RBAC, PodSecurity, TLS management, etc.) is only partially shown and should be adapted to organizational standards.
@@ -335,9 +313,10 @@ Security hardening (RBAC, PodSecurity, TLS management, etc.) is only partially s
 Some values (IPs, hostnames, DNS names) are anonymized / generic for public sharing.
 
 9. License
-
 You can choose any license you prefer, for example:
 
+text
+Copy code
 MIT License
 
 Copyright (c) <YEAR> <YOUR NAME>
