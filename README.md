@@ -1,44 +1,51 @@
-# k8s-airgap-installer
+k8s-airgap-installer
+
 A fully automated, air-gapped, multi-master Kubernetes cluster deployment using Ansible and Helm. Includes offline container registry, offline YUM repositories, HA control plane with HAProxy, Calico CNI, ingress-nginx, and production-grade cluster bootstrapping.
 
-# Air-Gapped Kubernetes Cluster Automation (Ansible + Helm)
+Air-Gapped Kubernetes Cluster Automation (Ansible + Helm)
 
-This repository contains my personal automation for building a **production-style, air-gapped Kubernetes cluster** using **Ansible** and **Helm**.
+This repository contains my personal automation for building a production-style, air-gapped Kubernetes cluster using Ansible and Helm.
 
 The goal of this project is to demonstrate:
 
-- End-to-end provisioning of a multi-node Kubernetes cluster with **no direct Internet access** on control-plane and worker nodes.
-- Use of a **bastion host** to provide an **offline container registry** and **RPM/YUM repositories**.
-- Automated installation of **Calico CNI**, **ingress-nginx**, and a sample application via **Helm**.
-- Infrastructure and configuration expressed as **idempotent Ansible roles** and **Helm charts/values**.
+End-to-end provisioning of a multi-node Kubernetes cluster with no direct Internet access on control-plane and worker nodes.
 
----
+Use of a bastion host to provide an offline container registry and RPM/YUM repositories.
 
-## 1. High-Level Architecture
+Automated installation of Calico CNI, ingress-nginx, and a sample application via Helm.
+
+Infrastructure and configuration expressed as idempotent Ansible roles and Helm charts/values.
+
+1. High-Level Architecture
 
 At a high level, the environment looks like this (example using AWS EC2, but the pattern is generic):
 
-- **Bastion Host**
-  - Has Internet access (or temporary staged access).
-  - Mirrors OS packages into **offline YUM repositories**.
-  - Hosts a **private container registry** (e.g. registry on port 5000).
-  - Acts as Ansible control node and jump host for SSH.
-- **Kubernetes API Load Balancer**
-  - Runs **HAProxy** (TCP mode) in front of all control-plane nodes.
-  - Exposes `kube-apiserver` on a stable VIP (e.g. `k8s-lb:6443`).
-- **Control-Plane Nodes** (e.g. 3 nodes)
-  - Installed with `kubeadm` using the HAProxy endpoint as `controlPlaneEndpoint`.
-  - Run `kube-apiserver`, `kube-scheduler`, `kube-controller-manager`, and stacked `etcd`.
-- **Worker Nodes** (e.g. 3 nodes)
-  - Join the cluster via `kubeadm join`.
-  - Run workloads and **ingress-nginx**.
-- **Application Ingress / Load Balancer (optional)**
-  - An external HAProxy or L4/L7 load balancer in front of the ingress-nginx service (NodePort).
-  - Used to expose HTTP/HTTPS applications from the cluster.
+Bastion Host
 
-Conceptual diagram (simplified):
+Has Internet access (or temporary staged access)
 
-```mermaid
+Hosts offline YUM repos and private image registry
+
+Runs Ansible
+
+Kubernetes API Load Balancer
+
+HAProxy (TCP) in front of control-plane nodes
+
+Control-Plane Nodes
+
+kubeadm-based HA cluster behind HAProxy
+
+Worker Nodes
+
+Run workloads + ingress-nginx
+
+Optional Application Load Balancer
+
+HAProxy or L4/L7 LB in front of ingress controller NodePort
+
+Conceptual diagram:
+
 flowchart LR
     user["User / Browser"] --> appLB["App Load Balancer"]
     appLB --> ingress["ingress-nginx on workers"]
@@ -77,62 +84,73 @@ flowchart LR
         bastion --> w2
         bastion --> w3
     end
-```markdown
 
-All control-plane and worker nodes are in private subnets with no direct Internet access. They reach:
 
-The offline YUM repos on the bastion.
+All control-plane and worker nodes are in private subnets with no direct Internet access.
+They reach:
 
-The offline container registry on the bastion.
+offline YUM repos (bastion)
 
-The Kubernetes API through the HAProxy load balancer.
+offline container registry (bastion)
+
+Kubernetes API via HAProxy
 
 2. Key Features
+Air-gapped friendly
 
-Air-gapped friendly design
+No Internet required on nodes
 
-No Internet required on masters/workers.
-
-Pre-mirrored RPM repositories and container images.
+Pre-mirrored RPMs + container images
 
 Ansible-driven automation
 
-Roles for node prerequisites, container runtime, kubeadm, CNI, ingress, Helm, etc.
+Node prerequisites
 
-Idempotent tasks and clear separation of responsibilities per role.
+Container runtime setup
 
-HA Kubernetes control plane
+kubeadm init
 
-Multiple control-plane nodes behind a single HAProxy endpoint.
+Control-plane + worker join
+
+Offline registry + repo setup
 
 Calico CNI
 
-Network plugin installed from offline images.
+Helm + ingress-nginx
 
-Ingress-nginx via Helm
+HA control plane
 
-Installed using a local Helm chart / tarball and custom values.
+Multi-master
 
-Supports host-based routing (e.g. hello.local).
+Single HAProxy endpoint
 
-Sample application deployment
+CNI: Calico
 
-Simple nginx-based app deployed via Helm to validate the infrastructure.
+Offline manifest + image hosting
+
+Ingress-nginx
+
+Offline Helm chart
+
+Custom values
+
+Host-based routing
+
+Sample application
+
+Test app to validate networking + ingress
 
 3. Repository Structure
-
-Adjust the structure below to match your actual folder layout.
-
 .
 ├── ansible/
 │   ├── inventories/
-│   │   └── hosts.yaml          # Inventory with bastion, masters, workers, load balancers
+│   │   └── hosts.yaml
 │   ├── group_vars/
-│   │   └── all.yaml            # Cluster-wide variables (CIDRs, versions, registry URL, etc.)
+│   │   └── all.yaml
 │   ├── roles/
 │   │   ├── bastion_offline_registry/
 │   │   ├── node_prereqs/
-│   │   ├── containerd_install/  # or docker_install/
+│   │   ├── containerd_install/
 │   │   ├── kube_binaries/
 │   │   ├── kubeadm_init/
 │   │   ├── kubeadm_join_controlplane/
@@ -140,148 +158,62 @@ Adjust the structure below to match your actual folder layout.
 │   │   ├── calico_install/
 │   │   ├── helm_install/
 │   │   └── ingress_deploy/
-│   └── site.yaml               # Main playbook orchestrating all roles
+│   └── site.yaml
 ├── helm/
 │   ├── charts/
-│   │   └── ingress-nginx-4.11.0.tgz    # Offline Helm chart
+│   │   └── ingress-nginx-4.11.0.tgz
 │   └── values/
-│       └── ingress-nginx-values.yaml   # Custom values (NodePort, host, etc.)
+│       └── ingress-nginx-values.yaml
 ├── docs/
-│   └── architecture.md         # (Optional) Extended architecture notes
+│   └── architecture.md
 └── README.md
 
 4. Air-Gap Strategy
-4.1. Package and Image Mirroring
+4.1. Mirror packages & images
 
-From an online environment (or temporarily online bastion):
+Mirror YUM repos
 
-Mirror OS packages (RHEL / Rocky / Alma, etc.) into a local YUM repo structure.
+Download Kubernetes, Calico, ingress-nginx images
 
-Download all required container images and save them as tarballs, for example:
+Save images as tar
 
-Kubernetes core images (kube-apiserver, kube-controller-manager, kube-scheduler, etcd, coredns, pause).
+Transfer to bastion
 
-Calico images.
+4.2. Bastion Host Setup
 
-ingress-nginx images.
+Private Docker/registry
 
-Application images (e.g. nginx for the sample app).
+Serve offline repos
 
-Transfer the RPMs and image tarballs to the bastion (e.g. via scp or aws s3 sync with a VPC endpoint).
+Load & re-tag images
 
-4.2. Bastion Host Setup (Ansible)
+HAProxy for Kubernetes API
 
-The bastion_offline_registry role typically:
-
-Configures and enables a private container registry (e.g. registry.local:5000).
-
-Loads all image tarballs and re-tags them under the internal registry.
-
-Serves offline YUM repos via HTTP (e.g. using httpd or nginx).
-
-Optionally configures HAProxy for:
-
-Kubernetes API load balancer (e.g. binding on *:6443).
-
-Application load balancing in front of ingress-nginx.
-
-Applies necessary SELinux settings, such as:
-
-setsebool -P haproxy_connect_any 1
+SELinux settings
 
 5. Ansible Workflow
+1) Prepare inventory & variables
+ansible/inventories/hosts.yaml
+ansible/group_vars/all.yaml
 
-A typical end-to-end run looks like this:
-
-Prepare inventory and variables
-
-Edit ansible/inventories/hosts.yaml:
-
-Define groups: bastion, control, worker, k8s_lb, app_lb (if any).
-
-Edit ansible/group_vars/all.yaml:
-
-Kubernetes version
-
-Pod CIDR, Service CIDR
-
-controlPlaneEndpoint (HAProxy VIP / DNS)
-
-Offline registry address
-
-YUM repo base URLs
-
-Bootstrap bastion
-
-cd ansible
+2) Bootstrap bastion
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "bastion"
 
-
-Prepare control-plane and worker nodes
-
-Install prerequisites: disable swap, configure kernel modules, sysctl, time sync, etc.
-
-Install and configure container runtime (containerd or docker).
-
-Point YUM to the offline repos.
-
+3) Prepare nodes
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "node_prereqs,containerd_install"
 
-
-Initialize the first control-plane node
-
-Use kubeadm_init role to:
-
-Generate kubeadm-config.yaml with controlPlaneEndpoint set to the API HAProxy.
-
-Run kubeadm init.
-
-Configure ~ec2-user/.kube/config (or another user) for kubectl access.
-
-Save the join commands for other nodes into Ansible facts.
-
+4) Initialize first master
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_init"
 
-
-Join additional control-plane and worker nodes
-
-kubeadm_join_controlplane uses the stored join command to add more masters.
-
-kubeadm_join_worker adds worker nodes.
-
+5) Join control-plane + workers
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_join_controlplane,kubeadm_join_worker"
 
-
-Install Calico CNI
-
-calico_install applies a pre-downloaded and modified calico.yaml (all image references point to the offline registry).
-
+6) Install Calico
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "calico_install"
 
-
-Install Helm and deploy ingress-nginx
-
-helm_install installs the Helm CLI on the bastion.
-
-ingress_deploy:
-
-Uses the offline chart helm/charts/ingress-nginx-4.11.0.tgz.
-
-Applies helm/values/ingress-nginx-values.yaml.
-
-Creates a NodePort or LoadBalancer service for ingress.
-
+7) Install Helm + ingress
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "helm_install,ingress_deploy"
 
+8) Deploy sample app
 
-Deploy a sample application
-
-Example: a simple nginx Helm chart with host hello.local.
-
-Used to validate:
-
-DNS resolution inside the cluster.
-
-Ingress routing via ingress-nginx.
-
-External access via the application load balancer (if configured).
+Verify ingress, DNS, networking.
