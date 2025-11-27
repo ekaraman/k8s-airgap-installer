@@ -73,5 +73,5 @@ flowchart LR
         bastion --> w1
         bastion --> w2
         bastion --> w3
-    end```
+    end
 
