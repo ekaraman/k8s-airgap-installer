@@ -300,10 +300,10 @@ Copy code
 kubectl -n ingress-nginx get svc,deploy,pods
 Test application access
 From a host that can reach the application load balancer or worker NodePort:
-
+```
 bash
-Copy code
 curl -v -H "Host: hello.local" http://<APP_LB_OR_NODE_IP>:<PORT>/
+```
 You should see the default nginx welcome page or your custom application response.
 
 ## 7. Technologies Used
