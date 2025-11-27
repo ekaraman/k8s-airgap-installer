@@ -203,10 +203,11 @@ YUM repo base URLs.
 
 ## 5.2. Bootstrap bastion
 
+```
 bash
-Copy code
 cd ansible
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "bastion"
+```
 
 ## 5.3. Prepare control-plane and worker nodes
 
@@ -216,9 +217,10 @@ Install and configure container runtime (containerd or docker).
 
 Point YUM to the offline repos.
 
+```
 bash
-Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "node_prereqs,containerd_install"
+```
 
 ## 5.4. Initialize the first control-plane node
 
@@ -232,9 +234,10 @@ Configure ~ec2-user/.kube/config (or another user) for kubectl access.
 
 Save the join commands for other nodes into Ansible facts.
 
+```
 bash
-Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_init"
+```
 
 ## 5.5. Join additional control-plane and worker nodes
 
@@ -242,17 +245,19 @@ kubeadm_join_controlplane uses the stored join command to add more masters.
 
 kubeadm_join_worker adds worker nodes.
 
+```
 bash
-Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_join_controlplane,kubeadm_join_worker"
+```
 
 ## 5.6. Install Calico CNI
 
 The calico_install role applies a pre-downloaded and modified calico.yaml (all image references point to the offline registry).
 
+```
 bash
-Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "calico_install"
+```
 
 ## 5.7. Install Helm and deploy ingress-nginx
 
@@ -266,9 +271,10 @@ Applies helm/values/ingress-nginx-values.yaml.
 
 Creates a NodePort or LoadBalancer service for ingress.
 
+```
 bash
-Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "helm_install,ingress_deploy"
+```
 
 ## 5.8. Deploy a sample application
 
@@ -287,23 +293,30 @@ External access via the application load balancer (if configured).
 After the playbooks complete:
 
 Check nodes
+```
 bash
-Copy code
 kubectl get nodes -o wide
+```
+
 Check system pods
+```
 bash
-Copy code
 kubectl get pods -A
+```
+
 Check ingress controller
+```
 bash
-Copy code
 kubectl -n ingress-nginx get svc,deploy,pods
+```
+
 Test application access
 From a host that can reach the application load balancer or worker NodePort:
 ```
 bash
 curl -v -H "Host: hello.local" http://<APP_LB_OR_NODE_IP>:<PORT>/
 ```
+
 You should see the default nginx welcome page or your custom application response.
 
 ## 7. Technologies Used
