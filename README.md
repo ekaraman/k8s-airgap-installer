@@ -175,9 +175,10 @@ Application load balancing in front of ingress-nginx.
 
 Applies necessary SELinux settings, such as:
 
+```
 bash
-Copy code
 setsebool -P haproxy_connect_any 1
+```
 
 ## 5. Ansible Workflow
 
