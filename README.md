@@ -158,7 +158,8 @@ Application images (e.g. nginx for the sample app).
 
 Transfer the RPMs and image tarballs to the bastion (e.g. via scp or aws s3 sync with a VPC endpoint).
 
-4.2. Bastion host setup (Ansible)
+## 4.2. Bastion host setup (Ansible)
+
 The bastion_offline_registry role typically:
 
 Configures and enables a private container registry (e.g. registry.local:5000).
@@ -180,12 +181,13 @@ Copy code
 setsebool -P haproxy_connect_any 1
 
 ## 5. Ansible Workflow
+
 A typical end-to-end run looks like this:
 
 ## 5.1. Prepare inventory and variables
 Edit ansible/inventories/hosts.yaml:
 
-Define groups: bastion, control, worker, k8s_lb, app_lb (if any).
+Define groups: bastion (gsu), control, worker, k8s_lb, app_lb (if any).
 
 Edit ansible/group_vars/all.yaml:
 
@@ -200,11 +202,14 @@ Offline registry address.
 YUM repo base URLs.
 
 ## 5.2. Bootstrap bastion
+
 bash
 Copy code
 cd ansible
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "bastion"
-5.3. Prepare control-plane and worker nodes
+
+## 5.3. Prepare control-plane and worker nodes
+
 Install prerequisites: disable swap, configure kernel modules, sysctl, time sync, etc.
 
 Install and configure container runtime (containerd or docker).
@@ -216,6 +221,7 @@ Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "node_prereqs,containerd_install"
 
 ## 5.4. Initialize the first control-plane node
+
 Use kubeadm_init role to:
 
 Generate kubeadm-config.yaml with controlPlaneEndpoint set to the API HAProxy.
@@ -231,6 +237,7 @@ Copy code
 ansible-playbook -i inventories/hosts.yaml site.yaml --tags "kubeadm_init"
 
 ## 5.5. Join additional control-plane and worker nodes
+
 kubeadm_join_controlplane uses the stored join command to add more masters.
 
 kubeadm_join_worker adds worker nodes.
