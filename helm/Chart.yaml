@@ -1,0 +1,7 @@
+apiVersion: v2
+name: hello-nginx
+description: Simple nginx test app with Service + Ingress
+type: application
+version: 0.1.0      # chart versiyonu
+appVersion: "1.25"  # uygulama versiyonu (nginx tag ile uyumlu)
+

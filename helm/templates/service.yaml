@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "hello-nginx.fullname" . }}-svc
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "hello-nginx.name" . }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ include "hello-nginx.name" . }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 80
+      protocol: TCP
+      name: http
+

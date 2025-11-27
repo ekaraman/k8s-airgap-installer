@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hello-nginx.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "hello-nginx.name" . }}
+    app.kubernetes.io/name: {{ include "hello-nginx.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "hello-nginx.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "hello-nginx.name" . }}
+    spec:
+      containers:
+        - name: nginx
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 80
+
