@@ -112,7 +112,6 @@ Simple nginx-based app deployed via Helm to validate the infrastructure.
 Adjust the structure below to match your actual folder layout.
 
 ```
-text
 .
 ├── ansible/
 │   ├── inventories/
