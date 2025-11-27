@@ -1,0 +1,12 @@
+# roles/kubeadm_join_worker/tasks/main.yml
+---
+- name: Get worker join command from first control-plane node
+  set_fact:
+    kubeadm_join_worker_cmd: "{{ hostvars[groups['master'][0]].kubeadm_join_worker_cmd }}"
+
+- name: Join this node as worker
+  become: true
+  shell: "{{ kubeadm_join_worker_cmd }}"
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+

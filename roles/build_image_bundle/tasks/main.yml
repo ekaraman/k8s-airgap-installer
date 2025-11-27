@@ -1,0 +1,28 @@
+---
+# tasks file for build_image_bundle
+- name: Ensure artifacts dir
+  file:
+    path: "{{ artifact_dir }}/images"
+    state: directory
+    recurse: yes
+
+- name: Pull, retag, push to private registry
+  shell: |
+    set -euo pipefail
+    for img in {{ image_list | join(' ') }}; do
+      docker pull "$img"
+      local="{{ registry_addr }}/$(echo $img | sed 's#^[^/]*/##')"
+      docker tag "$img" "$local"
+      docker push "$local"
+    done
+
+- name: Save all mirrored images (tar)
+  shell: |
+    list=""
+    for img in {{ image_list | join(' ') }}; do
+      list="$list {{ registry_addr }}/$(echo $img | sed 's#^[^/]*/##')"
+    done
+    docker save $list | gzip > {{ artifact_dir }}/images/k8s-images.tgz
+  args:
+    creates: "{{ artifact_dir }}/images/k8s-images.tgz"
+

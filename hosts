@@ -1,0 +1,26 @@
+[gsu]
+gsu ansible_host=172.31.48.176
+
+[loadbalancer]
+k8s-lb ansible_host=172.31.41.92
+
+[master]
+master-01 ansible_host=172.31.39.28
+master-02 ansible_host=172.31.44.57
+master-03 ansible_host=172.31.44.96
+
+[worker]
+worker-01 ansible_host=172.31.38.96
+worker-02 ansible_host=172.31.42.213
+worker-03 ansible_host=172.31.32.95
+
+[app_lb]
+app-lb ansible_host=172.31.48.103
+
+[k8s:children]
+master
+worker
+
+[all:vars]
+ansible_ssh_private_key_file=/etc/ansible/ansible.pem
+ansible_user=ec2-user

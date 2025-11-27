@@ -1,0 +1,36 @@
+---
+# tasks file for loadbalancer
+
+- name: Disable SELinux immediately
+  command: setenforce 0
+  when: ansible_selinux.status == "enabled"
+  ignore_errors: true
+
+- name: Disable SELinux permanently
+  replace:
+    path: /etc/selinux/config
+    regexp: '^SELINUX=.*'
+    replace: 'SELINUX=disabled'
+
+- name: Install HAProxy
+  become: true
+  package:
+    name: haproxy
+    state: present
+
+- name: Configure HAProxy for Kubernetes API
+  become: true
+  template:
+    src: haproxy.cfg.j2
+    dest: /etc/haproxy/haproxy.cfg
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart haproxy
+
+- name: Enable and start HAProxy
+  become: true
+  systemd:
+    name: haproxy
+    enabled: yes
+    state: started

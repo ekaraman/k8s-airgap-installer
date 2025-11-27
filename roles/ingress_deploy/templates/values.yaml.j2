@@ -1,0 +1,38 @@
+controller:
+  replicaCount: 2
+  image:
+    registry: {{ ingress_registry_host }}:{{ registry_port }}
+    image: ingress-nginx/controller
+    tag: "v1.11.2"
+    digest: ""         # ÖNEMLİ: digest kullanma
+
+  admissionWebhooks:
+    create:
+      image:
+        registry: {{ ingress_registry_host }}:{{ registry_port }}
+        image: ingress-nginx/kube-webhook-certgen
+        tag: "v1.5.3"
+        digest: ""         # ÖNEMLİ: digest kullanma
+    patch:
+      image:
+        registry: {{ ingress_registry_host }}:{{ registry_port }}
+        image: ingress-nginx/kube-webhook-certgen
+        tag: "v1.5.3"
+        digest: ""         # ÖNEMLİ: digest kullanma
+
+  service:
+    type: NodePort
+    nodePorts:
+      http: 30080
+      https: 30443
+
+  tolerations: []
+
+replicaCount: 2
+defaultBackend:
+  enabled: true
+  image:
+    registry: {{ ingress_registry_host }}:{{ registry_port }}
+    image: defaultbackend-amd64
+    tag: "1.5"
+    digest: ""         # ÖNEMLİ: digest kullanma

@@ -1,0 +1,33 @@
+---
+# tasks file for ingress_deploy
+- name: Ensure charts directory exists
+  file:
+    path: /opt/charts
+    state: directory
+    mode: "0755"
+
+- name: Generate values.yaml from template
+  template:
+    src: values.yaml.j2
+    dest: /opt/charts/ingress-nginx-values.yaml
+    mode: "0644"
+
+- name: Install or upgrade ingress-nginx via Helm
+  command: >
+    /usr/local/bin/helm upgrade --install ingress-nginx
+    /opt/charts/ingress-nginx-4.11.0.tgz
+    -n ingress-nginx --create-namespace
+    -f /opt/charts/ingress-nginx-values.yaml
+  environment:
+    KUBECONFIG: "/root/.kube/config"
+
+- name: Wait for ingress controller to be ready
+  command: >
+    kubectl wait --for=condition=Ready pod
+    -l app.kubernetes.io/component=controller
+    -n ingress-nginx
+    --timeout=300s
+  environment:
+    KUBECONFIG: "/root/.kube/config"
+
+

@@ -1,0 +1,12 @@
+---
+# tasks file for bastion_k8s_repo
+
+- name: Ensure docker repo root
+  file:
+    path: "{{ docker_repo_root }}"
+    state: directory
+    recurse: yes
+
+# Expect you copied pkgs.k8s.io mirror under k8s_repo_root
+- name: createrepo update
+  command: createrepo_c --update {{ docker_repo_root }}

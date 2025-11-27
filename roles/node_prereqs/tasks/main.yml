@@ -1,0 +1,42 @@
+---
+# tasks file for node_prereqs
+
+- name: Map bastion hostname to its private IP
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^\S+\s+{{ registry_host }}$'
+    line: "{{ hostvars[groups['gsu'][0]].ansible_host }} {{ registry_host }}"
+
+- name: Disable swap immediately
+  command: swapoff -a
+  when: ansible_swaptotal_mb|int > 0
+
+- name: Comment out swap in fstab
+  replace:
+    path: /etc/fstab
+    regexp: '(^.*\s+swap\s+.*$)'
+    replace: '# \1'
+
+- name: Kernel modules
+  copy:
+    dest: /etc/modules-load.d/k8s.conf
+    content: |
+      overlay
+      br_netfilter
+
+- name: Sysctl for bridge and forwarding
+  copy:
+    dest: /etc/sysctl.d/99-k8s.conf
+    content: |
+      net.bridge.bridge-nf-call-iptables  = 1
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.ipv4.ip_forward                 = 1
+  notify: Apply sysctl
+
+- name: Map apiserver load balancer hostname to its IP
+  become: true
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^\S+\s+{{ apiserver_lb_host }}$'
+    line: "{{ apiserver_lb_ip }} {{ apiserver_lb_host }}"
+    state: present

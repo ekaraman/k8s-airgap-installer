@@ -1,0 +1,36 @@
+global
+    log /dev/log local0
+    log /dev/log local1 notice
+    maxconn 2000
+    daemon
+
+defaults
+    log     global
+    mode    tcp
+    option  tcplog
+    option  dontlognull
+    timeout connect 10s
+    timeout client  1m
+    timeout server  1m
+
+frontend kube-apiserver
+    bind *:{{ apiserver_lb_port }}
+    mode tcp
+    option tcplog
+    default_backend kube-apiserver
+
+backend kube-apiserver
+    mode tcp
+    balance roundrobin
+    option tcp-check
+    default-server inter 10s downinter 5s rise 2 fall 3
+
+{% if apiserver_single_master | default(false) %}
+    # Sadece ilk master
+    server {{ groups['master'][0] }} {{ hostvars[groups['master'][0]].ansible_host }}:6443 check
+{% else %}
+    # Tüm masterlar
+{%   for host in groups['master'] %}
+    server {{ host }} {{ hostvars[host].ansible_host }}:6443 check
+{%   endfor %}
+{% endif %}
