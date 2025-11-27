@@ -77,6 +77,7 @@ flowchart LR
         bastion --> w2
         bastion --> w3
     end
+```markdown
 
 All control-plane and worker nodes are in private subnets with no direct Internet access. They reach:
 
