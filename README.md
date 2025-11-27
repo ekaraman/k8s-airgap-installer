@@ -135,8 +135,6 @@ Adjust the structure below to match your actual folder layout.
 │   │   └── ingress-nginx-4.11.0.tgz    # Offline Helm chart
 │   └── values/
 │       └── ingress-nginx-values.yaml   # Custom values (NodePort, host, etc.)
-├── docs/
-│   └── architecture.md         # (Optional) Extended architecture notes
 └── README.md
 ```
 ## 4. Air-Gap Strategy
