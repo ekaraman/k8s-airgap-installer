@@ -37,26 +37,26 @@ At a high level, the environment looks like this (example using AWS EC2, but the
 
 ```mermaid
 flowchart LR
-    user[User / Browser] --> appLB[App Load Balancer]
-    appLB --> ingress[Ingress Controller]
+    user[User / Browser] --> appLB[App Load Balancer (optional)]
+    appLB --> ingress[ingress-nginx on Workers]
     ingress --> svc[ClusterIP Services]
     svc --> pods[Application Pods]
 
-    subgraph Air-Gapped_VPC
-        subgraph Bastion_Subnet
-            bastion[Bastion Host - Ansible, Offline Registry, Offline YUM Repos]
+    subgraph Air-Gapped VPC
+        subgraph BastionSubnet
+            bastion[Bastion Host\n+ Ansible\n+ Offline Registry\n+ RPM Repos]
         end
 
-        subgraph Private_Subnets
-            lb[HAProxy - API Load Balancer]
+        subgraph PrivateSubnets
+            lb[HAProxy\nAPI Load Balancer]
 
-            subgraph ControlPlane_Nodes
+            subgraph ControlPlane[Control-Plane Nodes]
                 cp1[master-01]
                 cp2[master-02]
                 cp3[master-03]
             end
 
-            subgraph Worker_Nodes
+            subgraph Workers[Worker Nodes]
                 w1[worker-01]
                 w2[worker-02]
                 w3[worker-03]
