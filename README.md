@@ -111,8 +111,8 @@ Simple nginx-based app deployed via Helm to validate the infrastructure.
 ## 3. Repository Structure
 Adjust the structure below to match your actual folder layout.
 
+```
 text
-Copy code
 .
 ├── ansible/
 │   ├── inventories/
@@ -139,7 +139,7 @@ Copy code
 ├── docs/
 │   └── architecture.md         # (Optional) Extended architecture notes
 └── README.md
-
+```
 ## 4. Air-Gap Strategy
 ## 4.1. Package and image mirroring
 From an online environment (or temporarily online bastion):
