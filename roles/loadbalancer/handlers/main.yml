@@ -1,8 +1,0 @@
----
-# handlers file for loadbalancer
-
-- name: Restart haproxy
-  become: true
-  systemd:
-    name: haproxy
-    state: restarted
