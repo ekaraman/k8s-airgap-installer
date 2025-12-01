@@ -60,9 +60,6 @@
 - hosts: worker
   become: true
   roles:
-    - kubeadm_join_worker- hosts: worker
-  become: true
-  roles:
     - kubeadm_join_worker
 
 - name: Deploy ingress
